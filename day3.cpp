@@ -14,24 +14,28 @@ static_assert(prio('p') == 16);
 static_assert(prio('L') == 38);
 
 int main() {
-  unsigned sum{};
+  constexpr const auto N = prio('Z') + 1;
+
+  unsigned sum;
+  unsigned meh[N]{};
+  unsigned bit{1};
   loop("../../day3.txt", [&](auto line) {
-    constexpr const auto N = 100;
-    auto [a, b] = line.subview(line.size() / 2);
-    bool meh[N]{};
-    for (auto ca : a) {
-      for (auto &cb : b) {
-        if (ca == cb) {
-          meh[prio(ca)] = true;
-          break;
-        }
-      }
+    for (auto c : line) {
+      meh[prio(c)] |= bit;
+    }
+
+    if (bit != 1 << 2) {
+      bit <<= 1;
+      return;
     }
 
     for (auto i = 0; i < N; i++) {
-      if (meh[i])
+      if (meh[i] == 0b111)
         sum += i;
+
+      meh[i] = 0;
     }
+    bit = 1 << 0;
   });
 
   silog::log(silog::info, "sum: %d", sum);
