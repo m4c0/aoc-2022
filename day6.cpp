@@ -4,20 +4,26 @@ import jute;
 import silog;
 
 void run(jute::view line) {
-  for (auto i = 0; i < line.size() - 4; i++) {
-    char a = line[i + 0];
-    char b = line[i + 1];
-    char c = line[i + 2];
-    char d = line[i + 3];
-    if (a == b || a == c || a == d)
-      continue;
-    if (b == c || b == d)
-      continue;
-    if (c == d)
-      continue;
-    silog::log(silog::debug, "%d", i + 4);
-    break;
+  for (auto i = 0; i < line.size() - 14; i++) {
+    bool mask[256]{};
+    bool ok{true};
+    for (auto j = 0; j < 14; j++) {
+      unsigned c = line[i + j];
+      if (mask[c]) {
+        ok = false;
+        break;
+      }
+      mask[c] = true;
+    }
+    if (ok)
+      throw i + 14;
   }
-  throw 1;
+  throw -1;
 }
-int main() { loop(run); }
+int main() {
+  try {
+    loop(run);
+  } catch (int i) {
+    silog::log(silog::debug, "%d", i);
+  }
+}
