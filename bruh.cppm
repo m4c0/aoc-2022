@@ -21,3 +21,13 @@ export void loop(jute::view fn, auto &&func) {
     f = rest;
   }
 }
+
+export unsigned atoi(jute::view str) {
+  unsigned n = 0;
+  for (auto c : str) {
+    if (c < '0' || c > '9')
+      break;
+    n = n * 10 + (c - '0');
+  }
+  return n;
+}
