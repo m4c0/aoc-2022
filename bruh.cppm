@@ -21,6 +21,7 @@ export void loop(jute::view fn, auto &&func) {
     f = rest;
   }
 }
+export void loop(auto &&func) { loop("../../data.txt", func); }
 
 export unsigned atoi(jute::view str) {
   unsigned n = 0;
