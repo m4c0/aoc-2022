@@ -16,7 +16,9 @@ int main() {
   while (f != "") {
     auto [line, rest] = f.split('\n');
     auto foe = line[0] - 'A';
-    auto me = line[2] - 'X';
+    auto out = line[2] - 'X';
+
+    auto me = (foe + out - 1 + 3) % 3;
 
     auto pta = me + 1;
 
