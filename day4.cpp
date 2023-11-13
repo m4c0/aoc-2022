@@ -14,7 +14,7 @@ int main() {
     auto b0i = atoi(b0);
     auto b1i = atoi(b1);
 
-    bool yeah = (a0i <= b0i && b1i <= a1i) || (a0i >= b0i && b1i >= a1i);
+    bool yeah = (a0i <= b0i && b0i <= a1i) || (b0i <= a0i && a0i <= b1i);
     silog::log(silog::debug, "%d-%d -- %d-%d -- %c", a0i, a1i, b0i, b1i,
                yeah ? '!' : ' ');
 
