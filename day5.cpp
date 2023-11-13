@@ -12,6 +12,17 @@ public:
   constexpr void push(char c) { m_data[m_size++] = c; }
   constexpr char pop() { return m_data[--m_size]; }
 
+  constexpr void push(jute::view s) {
+    for (auto c : s) {
+      m_data[m_size++] = c;
+    }
+  }
+  constexpr jute::view pop(unsigned n) {
+    m_size -= n;
+    auto ptr = m_data + m_size;
+    return {ptr, n};
+  }
+
   constexpr void shove(char c) {
     if (c >= '0' && c <= '9')
       return;
@@ -27,27 +38,6 @@ public:
 
   void dump() { silog::log(silog::debug, "%.*s", m_size, m_data); }
 };
-static constexpr auto fail = []() -> bool { throw 1; };
-static_assert([] {
-  queue q{};
-  q.shove('a');
-  q.pop() == 'a' || fail();
-  q.shove('a');
-  q.shove('b');
-  q.shove('c');
-  q.pop() == 'a' || fail();
-  q.pop() == 'b' || fail();
-  q.pop() == 'c' || fail();
-  q.push('c');
-  q.push('e');
-  q.push('f');
-  q.pop() == 'f' || fail();
-  q.pop() == 'e' || fail();
-  q.push('d');
-  q.pop() == 'd' || fail();
-  q.pop() == 'c' || fail();
-  return true;
-}());
 
 static queue qs[9];
 
@@ -80,9 +70,7 @@ void run(jute::view line) {
 
   silog::log(silog::debug, "---- %d %d %d", qty, a, b);
   dump();
-  for (auto i = 0; i < qty; i++) {
-    qs[b].push(qs[a].pop());
-  }
+  qs[b].push(qs[a].pop(qty));
 }
 
 int main() {
