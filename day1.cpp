@@ -19,15 +19,23 @@ int main() {
   });
   silog::log(silog::info, "file size: %d", file.size());
 
-  unsigned max{};
+  unsigned max[3]{};
   unsigned elf{};
   jute::view f{file.begin(), file.size()};
   while (f != "") {
     auto [line, rest] = f.split('\n');
     if (line == "") {
-      silog::log(silog::debug, "elf: %d - max: %d", elf, max);
-      if (elf > max)
-        max = elf;
+      if (elf > max[0]) {
+        max[2] = max[1];
+        max[1] = max[0];
+        max[0] = elf;
+      } else if (elf > max[1]) {
+        max[2] = max[1];
+        max[1] = elf;
+      } else if (elf > max[0]) {
+        max[0] = elf;
+      }
+      silog::log(silog::debug, "%d %d %d -- %d", max[0], max[1], max[2], elf);
 
       elf = 0;
     } else {
@@ -35,4 +43,7 @@ int main() {
     }
     f = rest;
   }
+
+  auto sum = max[0] + max[1] + max[2];
+  silog::log(silog::info, "sum: %d", sum);
 }
