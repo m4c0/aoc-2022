@@ -5,6 +5,7 @@ import silog;
 
 unsigned sizes[1000];
 unsigned ssz{};
+unsigned total{};
 
 class {
   jute::view parts[100];
@@ -22,6 +23,7 @@ public:
     for (auto i = 0; i < size; i++) {
       sizes[sidx[i]] += s;
     }
+    total += s;
   }
 
   auto get() {
@@ -55,11 +57,21 @@ void line(jute::view line) {
 int main() {
   loop(line);
 
-  int total{};
-  for (auto i = 0; i < ssz; i++) {
-    auto s = sizes[i];
-    if (s <= 100000)
-      total += s;
+  auto cap = 70000000;
+  auto req = 30000000;
+  auto free = cap - total;
+  auto rel = req - free;
+
+  silog::log(silog::debug, "total: %d -- free: %d -- to release: %d", total,
+             free, rel);
+
+  unsigned min = ~0;
+  for (unsigned i = 0; i < ssz; i++) {
+    auto sz = sizes[i];
+    if (sz > rel && sz < min) {
+      min = sz;
+    }
   }
-  silog::log(silog::debug, "%d", total);
+
+  silog::log(silog::debug, "%d", min);
 }
