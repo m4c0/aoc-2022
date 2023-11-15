@@ -24,12 +24,21 @@ export void loop(jute::view fn, auto &&func) {
 }
 export void loop(auto &&func) { loop("../../data.txt", func); }
 
-export unsigned atoi(jute::view str) {
+export constexpr unsigned atoi(jute::view str) {
   unsigned n = 0;
-  for (auto c : str) {
+  auto st = str[0] == '-' ? 1 : 0;
+  auto [l, r] = str.subview(st);
+  for (auto c : r) {
     if (c < '0' || c > '9')
       break;
     n = n * 10 + (c - '0');
   }
-  return n;
+  return n * (st * -2 + 1);
+}
+static_assert(atoi("10") == 10);
+static_assert(atoi("123") == 123);
+static_assert(atoi("-123") == -123);
+
+export void info(const char *label, int val) {
+  silog::log(silog::info, "%s: %d", label, val);
 }
