@@ -9,13 +9,13 @@ export auto slurp(jute::view fn) {
     throw 1;
   });
   silog::log(silog::info, "file size: %d", file.size());
-
-  return jute::view{file.begin(), file.size()};
+  return file;
 }
 export auto slurp() { return slurp("../../data.txt"); }
 
 export void loop(jute::view fn, auto &&func) {
-  auto f = slurp(fn);
+  auto fd = slurp(fn);
+  jute::view f{fd.begin(), fd.size()};
   while (f != "") {
     auto [line, rest] = f.split('\n');
     func(line);
