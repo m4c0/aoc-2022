@@ -12,6 +12,7 @@ export auto slurp(jute::view fn) {
 
   return jute::view{file.begin(), file.size()};
 }
+export auto slurp() { return slurp("../../data.txt"); }
 
 export void loop(jute::view fn, auto &&func) {
   auto f = slurp(fn);
