@@ -6,13 +6,47 @@ import silog;
 constexpr const auto MONKEYS = 8;
 constexpr const auto MAX = 30;
 
+class item {
+  static constexpr const auto max = 20;
+  int rems[max]{};
+
+public:
+  constexpr item() = default;
+  explicit item(unsigned in) {
+    for (auto i = 1; i < max; i++) {
+      rems[i] = (rems[i] + in) % i;
+    }
+  }
+
+  item &operator+=(unsigned in) {
+    for (auto i = 1; i < max; i++) {
+      rems[i] = (rems[i] + in) % i;
+    }
+    return *this;
+  }
+  item &operator*=(unsigned in) {
+    for (auto i = 1; i < max; i++) {
+      auto iii = in % i;
+      rems[i] = (rems[i] * iii) % i;
+    }
+    return *this;
+  }
+
+  int &operator%(unsigned in) { return rems[in]; }
+
+  void sq() {
+    for (auto i = 1; i < max; i++) {
+      rems[i] = (rems[i] * rems[i]) % i;
+    }
+  }
+};
 struct {
-  int items[MAX]{};
+  item items[MAX]{};
   int icount{};
   int rems[MAX]{};
   int inspects{};
 
-  void push(int i) { items[icount++] = i; }
+  void push(item i) { items[icount++] = i; }
 } monkeys[MONKEYS];
 int mindex{};
 
@@ -25,7 +59,7 @@ void read_items(jute::view line) {
   while (r != "") {
     auto [n, rest] = r.split(',');
     auto [na, nb] = n.subview(1);
-    m.push(atoi(nb));
+    m.push(item{atoi(nb)});
     r = rest;
   }
 }
@@ -40,7 +74,8 @@ void run(jute::view line) {
       if (mr != "") {
         auto [mrl, mrr] = mr.subview(1);
         if (mrr == "old") {
-          old *= old;
+          old.sq();
+          // old *= old;
         } else {
           old *= atoi(mrr);
         }
@@ -49,7 +84,7 @@ void run(jute::view line) {
         auto [prl, prr] = pr.subview(1);
         old += atoi(prr);
       }
-      old /= 3;
+      // old /= 3;
     }
   }
 
@@ -90,21 +125,11 @@ void run(jute::view line) {
   }
 }
 
-void dump() {
-  for (auto &m : monkeys) {
-    silog::log(silog::debug, "----");
-    for (auto i = 0; i < m.icount; i++) {
-      info("item", m.items[i]);
-      // info("rem", m.rems[i]);
-    }
-  }
-}
-
 int main() {
   mindex = 0;
   loop(read_items);
 
-  for (auto i = 0; i < 20; i++) {
+  for (auto i = 0; i < 10000; i++) {
     mindex = 0;
     loop(run);
   }
@@ -121,5 +146,6 @@ int main() {
     }
   }
 
-  info("bus", max[0] * max[1]);
+  long l = (long)max[0] * (long)max[1];
+  silog::log(silog::debug, "%ld", l);
 }
