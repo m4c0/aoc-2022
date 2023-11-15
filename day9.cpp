@@ -21,8 +21,7 @@ constexpr int sign(int a) noexcept { return a == 0 ? 0 : (a < 0 ? -1 : 1); }
 constexpr point sign(const point &a) noexcept { return {sign(a.x), sign(a.y)}; }
 
 int main() {
-  point h{};
-  point t{};
+  point knots[10];
 
   constexpr const auto H = 1000;
   bool visited[H][H]{};
@@ -51,16 +50,25 @@ int main() {
     }
 
     for (auto i = 0; i < qty; i++) {
-      h = h + d;
-
-      auto ht = h - t;
-      auto aht = abs(ht);
-      if (aht.x < 2 && aht.y < 2)
-        continue;
-
-      t = t + sign(ht);
-      if (abs(t).x >= H || abs(t).y >= H)
+      auto &hh = knots[0];
+      hh = hh + d;
+      if (abs(hh).x >= H || abs(hh).y >= H)
         throw 1;
+
+      for (auto k = 1; k < 10; k++) {
+        auto &h = knots[k - 1];
+        auto &t = knots[k];
+
+        auto ht = h - t;
+        auto aht = abs(ht);
+        if (aht.x < 2 && aht.y < 2)
+          continue;
+
+        t = t + sign(ht);
+        if (abs(t).x >= H || abs(t).y >= H)
+          throw 1;
+      }
+      auto t = knots[9];
       visited[(H + t.y) % H][(H + t.x) % H] = true;
     }
   });
