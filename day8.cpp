@@ -7,46 +7,61 @@ jute::view lines[1000];
 unsigned lcount{};
 unsigned vcount{};
 
-bool check_v(int x, int y, int sy, int ey) {
+int score(int x, int y) {
   auto h = lines[y][x];
-  for (auto yy = sy; yy < ey; yy++) {
-    if (lines[yy][x] >= h)
-      return false;
-  }
-  return true;
-}
-bool check_h(int x, int y, int sx, int ex) {
-  auto h = lines[y][x];
-  for (auto xx = sx; xx < ex; xx++) {
-    if (lines[y][xx] >= h)
-      return false;
-  }
-  return true;
-}
 
-bool check(int x, int y) {
-  if (check_v(x, y, 0, y))
-    return true;
-  if (check_v(x, y, y + 1, lcount))
-    return true;
-  if (check_h(x, y, 0, x))
-    return true;
-  if (check_h(x, y, x + 1, lcount))
-    return true;
-  return false;
+  auto su = y;
+  for (auto sc = 1; sc < y; sc++) {
+    auto i = y - sc;
+    if (lines[i][x] >= h) {
+      su = sc;
+      break;
+    }
+  }
+
+  auto sd = lcount - y - 1;
+  for (auto sc = 1; sc < lcount - y - 1; sc++) {
+    auto i = y + sc;
+    if (lines[i][x] >= h) {
+      sd = sc;
+      break;
+    }
+  }
+
+  auto sl = x;
+  for (auto sc = 1; sc < x; sc++) {
+    auto i = x - sc;
+    if (lines[y][i] >= h) {
+      sl = sc;
+      break;
+    }
+  }
+
+  auto sr = lcount - x - 1;
+  for (auto sc = 1; sc < lcount - x - 1; sc++) {
+    auto i = x + sc;
+    if (lines[y][i] >= h) {
+      sr = sc;
+      break;
+    }
+  }
+
+  return su * sd * sl * sr;
 }
 
 int main() {
   loop([&](auto line) { lines[lcount++] = line; });
   silog::log(silog::debug, "%d x %d", lcount, (int)lines[0].size());
 
+  int max = 0;
   for (auto y = 0; y < lcount; y++) {
     auto line = lines[y];
     for (auto x = 0; x < line.size(); x++) {
-      if (check(x, y))
-        vcount++;
+      auto sc = score(x, y);
+      if (sc > max)
+        max = sc;
     }
   }
 
-  silog::log(silog::info, "%d", vcount);
+  silog::log(silog::info, "%d", max);
 }
