@@ -65,17 +65,14 @@ void try_move(int i, int di) {
   open_set.push_back(t);
 }
 
+unsigned run(int s);
 int main() {
-  int s{};
-
   loop([&](auto line) {
     cols = line.size();
     for (auto c : line) {
       node n{};
       if (c == 'S') {
-        n.g_score = 0;
         n.h = 'a';
-        s = nodes.size();
       } else if (c == 'E') {
         n.h = 'z';
         e = nodes.size();
@@ -86,18 +83,37 @@ int main() {
     }
   });
   rows = nodes.size() / cols;
-  silog::log(silog::debug, "s: %d - e: %d - max: %d", s, e, nodes.size());
   silog::log(silog::debug, "cols: %d - rows: %d", cols, rows);
 
+  unsigned min{~0U};
+  for (auto i = 0; i < nodes.size(); i++) {
+    if (nodes[i].h != 'a')
+      continue;
+
+    auto ri = run(i);
+    if (ri < min) {
+      min = ri;
+    }
+  }
+  info("result", min);
+}
+
+unsigned run(int s) {
+  for (auto i = 0; i < nodes.size(); i++) {
+    nodes[i].g_score = ~0U;
+    nodes[i].f_score = ~0U;
+  }
+
+  nodes[s].g_score = 0;
   nodes[s].f_score = heu(s);
+  open_set.truncate(0);
   open_set.push_back(s);
 
   while (open_set.size() > 0) {
     auto [min, ni] = find_min();
-    info("trying", ni);
     if (ni == e) {
-      silog::log(silog::info, "%d", nodes[e].g_score);
-      return 0;
+      silog::log(silog::info, "%d: %d", s, nodes[e].g_score);
+      return nodes[e].g_score;
     }
 
     open_set[min] = open_set.pop_back();
@@ -107,4 +123,5 @@ int main() {
     try_move(ni, -cols);
   }
   silog::log(silog::error, "no path found");
+  return ~0U;
 }
