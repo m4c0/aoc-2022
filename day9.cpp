@@ -3,20 +3,6 @@ import bruh;
 import jute;
 import silog;
 
-struct point {
-  int x{};
-  int y{};
-};
-constexpr point operator+(const point &a, const point &b) noexcept {
-  return {a.x + b.x, a.y + b.y};
-}
-constexpr point operator-(const point &a, const point &b) noexcept {
-  return {a.x - b.x, a.y - b.y};
-}
-constexpr point abs(const point &a) noexcept {
-  return {a.x > 0 ? a.x : -a.x, a.y > 0 ? a.y : -a.y};
-}
-
 constexpr int sign(int a) noexcept { return a == 0 ? 0 : (a < 0 ? -1 : 1); }
 constexpr point sign(const point &a) noexcept { return {sign(a.x), sign(a.y)}; }
 
