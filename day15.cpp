@@ -3,12 +3,11 @@ import bruh;
 import hai;
 import jute;
 import silog;
+import traits;
 
 struct sensor {
   point pos;
   int manh;
-  int min_x;
-  int max_x;
 };
 hai::varray<sensor> sens{10240};
 hai::varray<point> bics{10240};
@@ -31,17 +30,7 @@ void read(jute::view line) {
 
   auto d = abs(b - s.pos);
   s.manh = d.x + d.y;
-  auto d2m = abs(y_check - s.pos.y);
-  auto rng2m = s.manh - d2m;
-  if (rng2m > 0) {
-    s.min_x = s.pos.x - rng2m;
-    s.max_x = s.pos.x + rng2m;
-
-    mn(min_x, s.min_x);
-    mx(max_x, s.max_x);
-
-    sens.push_back(s);
-  }
+  sens.push_back(s);
 
   if (b.y != y_check)
     return;
@@ -52,18 +41,70 @@ void read(jute::view line) {
   bics.push_back(b);
 }
 
-bool check(point p) {
-  for (auto b : bics) {
-    if (b == p)
-      return false;
-  }
+struct ival {
+  int min{0};
+  int max{4000000};
+};
+void enqueue(hai::varray<ival> &q, ival i) {
+  for (auto &ii : q)
+    if (ii.min == i.min && ii.max == i.max)
+      return;
 
-  for (auto &s : sens) {
-    if (p.x >= s.min_x && p.x <= s.max_x)
-      return true;
-  }
+  q.push_back(i);
+}
 
-  return false;
+hai::varray<ival> newq{102400};
+hai::varray<ival> q{102400};
+long check(int y) {
+  newq.truncate(0);
+  q.truncate(0);
+  q.push_back(ival{});
+
+  for (const auto &s : sens) {
+    auto d2m = abs(y - s.pos.y);
+    auto rng2m = s.manh - d2m;
+    if (y == 2908372) {
+      silog::log(silog::debug, "s %d %d %d", d2m, s.manh, rng2m);
+    }
+    if (rng2m < 0)
+      continue;
+
+    auto min_x = s.pos.x - rng2m;
+    auto max_x = s.pos.x + rng2m;
+    if (y == 2908372) {
+      silog::log(silog::debug, "mm %d %d", min_x, max_x);
+    }
+    for (const auto &i : q) {
+      if (max_x <= i.min || min_x >= i.max) {
+        newq.push_back(i);
+      } else {
+        if (i.min < min_x && min_x <= i.max)
+          newq.push_back(ival{i.min, min_x - 1});
+        if (i.min <= max_x && max_x < i.max)
+          newq.push_back(ival{max_x + 1, i.max});
+      }
+    }
+
+    if (y == 2908372) {
+      for (auto i : newq) {
+        silog::log(silog::debug, "%d %d", i.min, i.max);
+      }
+    }
+    q.truncate(0);
+
+    auto t = traits::move(q);
+    q = traits::move(newq);
+    newq = traits::move(t);
+  }
+  if (q.size() > 0) {
+    for (auto qq : q) {
+      silog::log(silog::debug, "%d %d", qq.min, qq.max);
+    }
+    info("qq", q.size());
+    info("y", y);
+    return q[0].min;
+  }
+  return -1;
 }
 
 int main() {
@@ -71,11 +112,10 @@ int main() {
   info("sens", sens.size());
   info("bics", bics.size());
 
-  point p{.y = y_check};
-  int n{};
-  for (p.x = min_x; p.x <= max_x; p.x++) {
-    if (check(p))
-      n++;
+  for (long y = 0; y < 4000000; y++) {
+    long x = check(y);
+    if (x >= 0) {
+      silog::log(silog::info, "%ld --- %ld", y, x * 4000000 + y);
+    }
   }
-  info("res", n);
 }
