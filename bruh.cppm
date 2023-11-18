@@ -46,6 +46,8 @@ export void info(const char *label, jute::view val) {
   silog::log(silog::info, "%s: [%.*s]", label, (int)val.size(), val.data());
 }
 
+export constexpr int abs(int a) noexcept { return a >= 0 ? a : -a; }
+
 export struct point {
   int x{};
   int y{};
@@ -56,6 +58,18 @@ export constexpr point operator+(const point &a, const point &b) noexcept {
 export constexpr point operator-(const point &a, const point &b) noexcept {
   return {a.x - b.x, a.y - b.y};
 }
+export constexpr bool operator==(const point &a, const point &b) noexcept {
+  return a.x == b.x && a.y == b.y;
+}
 export constexpr point abs(const point &a) noexcept {
-  return {a.x > 0 ? a.x : -a.x, a.y > 0 ? a.y : -a.y};
+  return {abs(a.x), abs(a.y)};
+}
+
+export constexpr void mx(int &a, int b) noexcept {
+  if (b > a)
+    a = b;
+}
+export constexpr void mn(int &a, int b) noexcept {
+  if (b < a)
+    a = b;
 }
