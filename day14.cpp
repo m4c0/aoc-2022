@@ -3,11 +3,16 @@ import bruh;
 import jute;
 import silog;
 
-constexpr const auto w = 600;
+constexpr const auto w = 2000;
 constexpr const auto h = 200;
 char map[h][w]{};
+int height = 0;
 
 void draw(int x0, int y0, jute::view rest) {
+  if (y0 + 2 > height) {
+    height = y0 + 2;
+  }
+
   if (rest == "")
     return;
 
@@ -73,20 +78,25 @@ bool sand() {
     }
 
     map[p.y - 1][p.x] = 'o';
-    return false;
+    return p.y == 1;
   }
 
+  throw 0;
   map[p.y - 1][p.x] = 'o';
   return true;
 }
 
 int main() {
   loop(run);
+  for (auto &c : map[height]) {
+    c = '=';
+  }
+  // dump();
 
-  for (auto i = 0; i < 2000; i++) {
+  for (auto i = 0; i < 2000000; i++) {
     if (sand()) {
       dump();
-      info("res", i);
+      info("res", i + 1);
       break;
     }
   }
