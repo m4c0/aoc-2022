@@ -17,6 +17,7 @@ struct valve {
   bool visited{};
 };
 valve vs[max_valves]{};
+hai::varray<int> valids{max_valves};
 
 constexpr auto valid(const valve &v) { return v.tunnels.size() > 0; }
 
@@ -47,11 +48,14 @@ void read(jute::view line) {
   ts.push_back(tun{n2id(id)});
 
   auto idn = n2id(n);
+  auto rate = atoi(re);
   vs[idn] = {
-      .rate = atoi(re),
+      .rate = rate,
       .id = idn,
       .tunnels = traits::move(ts),
   };
+  if (rate > 0)
+    valids.push_back(idn);
 }
 
 int v2v_cost[max_valves][max_valves]{};
@@ -97,7 +101,7 @@ struct move {
   int rtaa; // remaining time after arriving
 };
 int besty(move mm, move me, int rate) {
-  indcounter ind{};
+  // indcounter ind{};
   // fprintf(stderr, "%s%s(%d) %s(%d) %d\n", *ind, id2n(mm.to).data(),
   // 26 - mm.rtaa, id2n(me.to).data(), 26 - me.rtaa, rate);
 
@@ -106,16 +110,16 @@ int besty(move mm, move me, int rate) {
     return 0;
   }
 
+  auto &vvc = v2v_cost[mm.to];
+
   int max{rate * me.rtaa};
   // int ppp{};
-  for (auto &t : vs) {
-    auto tid = t.id;
-    if (t.rate == 0)
-      continue;
+  for (auto tid : valids) {
+    auto &t = vs[tid];
     if (t.visited)
       continue;
 
-    auto cost = v2v_cost[mm.to][tid] + 1;
+    auto cost = vvc[tid] + 1;
     move nmm{
         .to = tid,
         .rtaa = mm.rtaa - cost,
