@@ -93,13 +93,8 @@ void calc_costs() {
 }
 
 int besty(int from, int mins, int rate) {
-  auto &v = vs[from];
-  rate += v.rate;
-
   if (mins <= 0)
     return 0;
-
-  v.visited = true;
 
   int max{rate * mins};
   for (auto &t : vs) {
@@ -115,10 +110,11 @@ int besty(int from, int mins, int rate) {
 
     auto rls = cost * rate;
 
-    mx(max, rls + besty(tid, mins - cost, rate));
+    t.visited = true;
+    mx(max, rls + besty(tid, mins - cost, rate + t.rate));
+    t.visited = false;
   }
 
-  v.visited = false;
   return max;
 }
 
