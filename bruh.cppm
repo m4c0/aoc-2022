@@ -73,3 +73,20 @@ export constexpr void mn(int &a, int b) noexcept {
   if (b < a)
     a = b;
 }
+
+static int ic_n{};
+static char ic_buf[1024]{};
+export class indcounter {
+
+public:
+  indcounter() {
+    ic_buf[ic_n++] = ' ';
+    ic_buf[ic_n++] = ' ';
+  }
+  ~indcounter() {
+    ic_buf[--ic_n] = 0;
+    ic_buf[--ic_n] = 0;
+  }
+
+  const auto operator*() const noexcept { return ic_buf; }
+};

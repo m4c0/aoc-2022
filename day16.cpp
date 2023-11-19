@@ -79,7 +79,7 @@ void calc_costs() {
     for (auto tid : vi.tunnels) {
       v2v_cost[vi.id][tid] = 1;
     }
-    v2v_cost[vi.id][vi.id] = 1;
+    v2v_cost[vi.id][vi.id] = 0;
   }
   for (auto &vi : vs) {
     if (!valid(vi))
@@ -92,11 +92,22 @@ void calc_costs() {
   }
 }
 
-int besty(int from, int mins, int rate) {
-  if (mins <= 0)
-    return 0;
+struct move {
+  int to;
+  int rtaa; // remaining time after arriving
+};
+int besty(move mm, move me, int rate) {
+  indcounter ind{};
+  // fprintf(stderr, "%s%s(%d) %s(%d) %d\n", *ind, id2n(mm.to).data(),
+  // 26 - mm.rtaa, id2n(me.to).data(), 26 - me.rtaa, rate);
 
-  int max{rate * mins};
+  if (mm.rtaa <= 0) {
+    // fprintf(stderr, "%sdoney\n", *ind);
+    return 0;
+  }
+
+  int max{rate * me.rtaa};
+  // int ppp{};
   for (auto &t : vs) {
     auto tid = t.id;
     if (t.rate == 0)
@@ -104,17 +115,31 @@ int besty(int from, int mins, int rate) {
     if (t.visited)
       continue;
 
-    auto cost = v2v_cost[from][tid] + 1;
-    if (cost > mins)
+    auto cost = v2v_cost[mm.to][tid] + 1;
+    move nmm{
+        .to = tid,
+        .rtaa = mm.rtaa - cost,
+    };
+    if (nmm.rtaa <= 0)
       continue;
 
-    auto rls = cost * rate;
-
     t.visited = true;
-    mx(max, rls + besty(tid, mins - cost, rate + t.rate));
+    // ppp++;
+    auto rls = (me.rtaa - nmm.rtaa) * rate;
+    if (nmm.rtaa > me.rtaa) {
+      // auto rls = cost * rate;
+      mx(max, rls + besty(nmm, me, rate + t.rate));
+    } else if (nmm.rtaa < me.rtaa) {
+      mx(max, rls + besty(me, nmm, rate + t.rate));
+    } else {
+      // auto rls = 0;
+      mx(max, rls + besty(nmm, me, rate + t.rate));
+      mx(max, rls + besty(me, nmm, rate + t.rate));
+    }
     t.visited = false;
   }
 
+  // fprintf(stderr, "%smax = %d, vis = %d\n", *ind, max, ppp);
   return max;
 }
 
@@ -123,5 +148,6 @@ int main() {
   calc_costs();
 
   auto aa = n2id("AA");
-  info("res", besty(aa, 30, 0));
+  move m{aa, 26};
+  info("res", besty(m, m, 0));
 }
