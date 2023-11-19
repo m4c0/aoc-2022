@@ -92,18 +92,14 @@ void calc_costs() {
   }
 }
 
-int deep{};
-int besty(int from = n2id("AA"), int mins = 30, int rate = 0) {
+int besty(int from, int mins, int rate) {
   auto &v = vs[from];
   rate += v.rate;
-  // printf("%*svisit %s - %dm - rate %d\n", deep, "", id2n(from).data(), 30 -
-  // mins, rate);
 
   if (mins <= 0)
     return 0;
 
   v.visited = true;
-  deep += 2;
 
   int max{rate * mins};
   for (auto &t : vs) {
@@ -122,7 +118,6 @@ int besty(int from = n2id("AA"), int mins = 30, int rate = 0) {
     mx(max, rls + besty(tid, mins - cost, rate));
   }
 
-  deep -= 2;
   v.visited = false;
   return max;
 }
@@ -131,5 +126,6 @@ int main() {
   loop(read);
   calc_costs();
 
-  info("res", besty());
+  auto aa = n2id("AA");
+  info("res", besty(aa, 30, 0));
 }
