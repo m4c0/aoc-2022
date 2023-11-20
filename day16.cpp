@@ -8,36 +8,41 @@ import traits;
 
 constexpr const auto max_valves = 27 * 27;
 
-using tun = int;
-using tuns = hai::varray<tun>;
-struct valve {
-  unsigned rate{};
-  int id{};
-  tuns tunnels{};
-  bool visited{};
+class cost {
+  // something greater than 30, but low enought to give space to sum, etc
+  int i = 1000;
+
+public:
+  constexpr cost() = default;
+  cost(int i) : i{i} {}
+
+  operator int &() { return i; }
+  cost operator+(const cost &o) const { return i + o.i; }
 };
-valve vs[max_valves]{};
-hai::varray<int> valids{max_valves};
 
-constexpr auto valid(const valve &v) { return v.tunnels.size() > 0; }
+int rates[max_valves]{};
+hai::varray<int> openables{max_valves};
+hai::varray<int> valves{max_valves};
+cost costs[max_valves][max_valves]{};
 
-constexpr int n2id(jute::view v) { return (v[0] - 'A') * 27 + (v[1] - 'A'); }
 auto id2n(int id) {
   hai::cstr buf{3};
   (buf.data())[0] = (id / 27) + 'A';
   (buf.data())[1] = (id % 27) + 'A';
   return buf;
 }
-
+constexpr int n2id(jute::view v) { return (v[0] - 'A') * 27 + (v[1] - 'A'); }
 void read(jute::view line) {
   auto [l, n, r] = line.subview(6, 2);
   auto [le, re] = r.split('=');
 
-  tuns ts{16};
+  auto vid = n2id(n);
+  rates[vid] = atoi(re);
+
   auto [rest, t] = line.rsplit(',');
   while (rest != "") {
-    auto id = t.subview(1).after;
-    ts.push_back(tun{n2id(id)});
+    auto tid = n2id(t.subview(1).after);
+    costs[vid][tid] = 1;
 
     auto [a, b] = rest.rsplit(',');
     rest = a;
@@ -45,113 +50,100 @@ void read(jute::view line) {
   }
 
   auto id = t.rsplit(' ').after;
-  ts.push_back(tun{n2id(id)});
+  costs[vid][n2id(id)] = 1;
 
-  auto idn = n2id(n);
-  auto rate = atoi(re);
-  vs[idn] = {
-      .rate = rate,
-      .id = idn,
-      .tunnels = traits::move(ts),
-  };
-  if (rate > 0)
-    valids.push_back(idn);
+  valves.push_back(vid);
+  if (rates[vid] > 0)
+    openables.push_back(vid);
 }
 
-int v2v_cost[max_valves][max_valves]{};
-int calc_cost(valve &i, const valve &j, int dp = 4) {
-  auto &c = v2v_cost[i.id][j.id];
-  if (c > 0)
-    return c;
-  if (i.visited) {
-    return 1000000;
-  }
-
-  auto min = 1000000;
-  i.visited = true;
-  for (auto tid : i.tunnels) {
-    auto cc = calc_cost(vs[tid], j, dp + 2);
-    mn(min, 1 + cc);
-  }
-  i.visited = false;
-  if (min != 1000000)
-    c = min;
-  return min;
-}
 void calc_costs() {
-  for (auto &vi : vs) {
-    for (auto tid : vi.tunnels) {
-      v2v_cost[vi.id][tid] = 1;
-    }
-    v2v_cost[vi.id][vi.id] = 0;
-  }
-  for (auto &vi : vs) {
-    if (!valid(vi))
-      continue;
-    for (auto &vj : vs) {
-      if (!valid(vj))
-        continue;
-      calc_cost(vi, vj);
+  // "k" iteration allows incremental "breaking" of paths. Roughtly:
+  // k0 starts with all direct paths, adds any "2" paths
+  // k1 starts with paths <= 2, adds any "3" paths
+  // k2 starts with paths <= 3, adds any "4" paths
+  // etc etc.
+  // The order of "k" doesn't matter
+  for (auto k : valves) {
+    for (auto i : valves) {
+      for (auto j : valves) {
+        mn(costs[i][j], costs[i][k] + costs[k][j]);
+      }
     }
   }
 }
 
-struct move {
-  int to;
-  int rtaa; // remaining time after arriving
-};
-int besty(move mm, move me, int rate) {
-  // indcounter ind{};
-  // fprintf(stderr, "%s%s(%d) %s(%d) %d\n", *ind, id2n(mm.to).data(),
-  // 26 - mm.rtaa, id2n(me.to).data(), 26 - me.rtaa, rate);
+// this will contain a map of all visited notes to its costs.
+// doesn't make sense for part 1, but it drastically improves part 2
+hai::array<int> pcosts{};
+void reset() {
+  const int max_paths = 1 << (openables.size() + 1);
+  info("max paths", max_paths);
+  pcosts.set_capacity(max_paths);
+  for (auto &p : pcosts)
+    p = 0;
+}
 
-  if (mm.rtaa <= 0) {
-    // fprintf(stderr, "%sdoney\n", *ind);
-    return 0;
+// visited is a bitmask of visited nodes
+void visit(int vid, int timer, int visited = 0, int rls = 0) {
+  // replaces any visited combo of valves with the best option so far.
+  // for part 1, a simple "int" would suffice
+  mx(pcosts[visited], rls);
+  for (auto i = 0; i < openables.size(); i++) {
+    auto id = openables[i];
+    auto nt = timer - costs[vid][id] - 1;
+    if (nt <= 0)
+      continue;
+
+    auto is = 1 << i;
+    if (is & visited)
+      continue;
+
+    // we pass along the cost if we don't move, so the next recursion step will
+    // be better
+    auto nr = rls + rates[id] * nt;
+    visit(id, nt, is | visited, nr);
   }
+}
 
-  auto &vvc = v2v_cost[mm.to];
+void find_max() {
+  int max{};
+  for (auto pc : pcosts) {
+    mx(max, pc);
+  }
+  info("res", max);
+}
 
-  int max{rate * me.rtaa};
-  // int ppp{};
-  for (auto tid : valids) {
-    auto &t = vs[tid];
-    if (t.visited)
+void find_max_pair() {
+  int max{};
+  for (auto i = 0; i < pcosts.size(); i++) {
+    auto pi = pcosts[i];
+    if (!pi)
       continue;
 
-    auto cost = vvc[tid] + 1;
-    move nmm{
-        .to = tid,
-        .rtaa = mm.rtaa - cost,
-    };
-    if (nmm.rtaa <= 0)
-      continue;
+    for (auto j = 0; j < pcosts.size(); j++) {
+      if ((i & j) != 0)
+        continue;
 
-    t.visited = true;
-    // ppp++;
-    auto rls = (me.rtaa - nmm.rtaa) * rate;
-    if (nmm.rtaa > me.rtaa) {
-      // auto rls = cost * rate;
-      mx(max, rls + besty(nmm, me, rate + t.rate));
-    } else if (nmm.rtaa < me.rtaa) {
-      mx(max, rls + besty(me, nmm, rate + t.rate));
-    } else {
-      // auto rls = 0;
-      mx(max, rls + besty(nmm, me, rate + t.rate));
-      mx(max, rls + besty(me, nmm, rate + t.rate));
+      auto pj = pcosts[j];
+      if (!pj)
+        continue;
+
+      mx(max, pi + pj);
     }
-    t.visited = false;
   }
-
-  // fprintf(stderr, "%smax = %d, vis = %d\n", *ind, max, ppp);
-  return max;
+  info("pair", max);
 }
 
 int main() {
   loop(read);
   calc_costs();
 
-  auto aa = n2id("AA");
-  move m{aa, 26};
-  info("res", besty(m, m, 0));
+  reset();
+  visit(n2id("AA"), 30);
+  find_max();
+
+  reset();
+  visit(n2id("AA"), 26);
+  find_max_pair();
 }
