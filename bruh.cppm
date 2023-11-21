@@ -22,7 +22,8 @@ export void loop(jute::view fn, auto &&func) {
     f = rest;
   }
 }
-export void loop(auto &&func) { loop("../../data.txt", func); }
+export void loop(auto &&func) { loop("../../data.real.txt", func); }
+export void loop_e(auto &&func) { loop("../../data.fake.txt", func); }
 
 export constexpr unsigned atoi(jute::view str) {
   unsigned n = 0;
