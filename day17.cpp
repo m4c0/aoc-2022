@@ -31,8 +31,20 @@ public:
   }
 };
 
+constexpr const auto pit_mask = 0b100000001;
 jets j{};
-hai::array<int> pit{10240};
+class pit_t {
+  hai::array<int> pit{10240};
+
+public:
+  pit_t() {
+    for (auto &p : pit) {
+      p = pit_mask;
+    }
+    pit[0] = 0x1ff;
+  }
+  constexpr auto &operator[](long i) { return pit[i % 1024]; }
+} pit;
 
 bool fits(int y, int shf, const pat_t &pat) {
   for (auto py = 0; py < pat_h; py++) {
@@ -49,18 +61,15 @@ int shoosh(int y, int shf, const pat_t &pat) {
   return fits(y, nsh, pat) ? nsh : shf;
 }
 
-constexpr const auto pit_mask = 0b100000001;
+long limit = 2022;
 void run(jute::view line) {
   j = jets{line};
+  pit = {};
 
-  for (auto &p : pit) {
-    p = pit_mask;
-  }
-  pit[0] = 0x1ff;
-  int height = 1;
+  long height = 1;
 
   int cur_pat = 0;
-  for (auto i = 0; i < 2022; i++) {
+  for (long i = 0; i < limit; i++) {
     const auto &pat = pats[cur_pat];
 
     auto shf = 3;
@@ -78,20 +87,20 @@ void run(jute::view line) {
     }
     while (pit[height] != pit_mask)
       height++;
+    pit[height + 3] = pit_mask;
+    pit[height + 4] = pit_mask;
+    pit[height + 5] = pit_mask;
+    pit[height + 6] = pit_mask;
 
     cur_pat = (cur_pat + 1) % pat_count;
   }
-  for (auto i = height + 5; i >= 0; i--) {
-    char buf[10]{};
-    char *p = buf;
-    int n = pit[i];
-    while (n > 0) {
-      *p++ = (n & 1) ? 'X' : '.';
-      n >>= 1;
-    }
-
-    silog::log(silog::debug, "%6d: %s", i, buf);
-  }
-  info("height", height - 1);
+  silog::log(silog::info, "============== height: %ld", height - 1);
 }
-int main() { loop(run); }
+int main() {
+  loop_e(run);
+  loop(run);
+
+  limit = 1000000000000;
+  loop_e(run);
+  loop(run);
+}
