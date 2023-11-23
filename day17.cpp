@@ -38,6 +38,7 @@ constexpr const auto pit_mask = 0b100000001;
 jets j{};
 class pit_t {
   hai::array<int> pit{10240};
+  long adj{};
 
 public:
   pit_t() { reset(); }
@@ -46,7 +47,11 @@ public:
       p = pit_mask;
     }
   }
-  constexpr auto &operator[](long i) { return pit[i % 1024]; }
+  void adjust(long a) { adj = a; }
+  constexpr auto &operator[](long i) {
+    i += adj;
+    return pit[i % 1024];
+  }
 } pit;
 
 bool fits(long y, int shf, const pat_t &pat) {
@@ -73,7 +78,7 @@ void run(jute::view line) {
 
   long height = 1;
   long oh = height;
-  int duh = 5;
+  int duh = 3;
 
   long oi{};
   int magic_row{};
@@ -125,12 +130,13 @@ void run(jute::view line) {
         oh = height - 1;
       } else {
         long rem = limit - i;
-        long cycles = rem / di - 5;
+        long cycles = rem / di - 3;
 
-        pit.reset();
+        // pit.reset();
         i += di * cycles;
-        height += dh * cycles - 1;
-        pit[height] = 0x1ff;
+        height += dh * cycles - 0;
+        pit.adjust(-dh * cycles + 0);
+        // pit[height] = 0x1ff;
         silog::log(silog::debug, "skip - h: %ld - i: %ld - lp: %d", height, i,
                    lp);
         duh = false;
