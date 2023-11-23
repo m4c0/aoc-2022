@@ -49,7 +49,7 @@ public:
   constexpr auto &operator[](long i) { return pit[i % 1024]; }
 } pit;
 
-bool fits(int y, int shf, const pat_t &pat) {
+bool fits(long y, int shf, const pat_t &pat) {
   for (auto py = 0; py < pat_h; py++) {
     auto p = pat[3 - py] << shf;
     if (p & pit[y + py]) {
@@ -58,7 +58,7 @@ bool fits(int y, int shf, const pat_t &pat) {
   }
   return true;
 }
-int shoosh(int y, int shf, const pat_t &pat) {
+int shoosh(long y, int shf, const pat_t &pat) {
   auto move = j.next();
   auto nsh = shf - move;
   return fits(y, nsh, pat) ? nsh : shf;
@@ -73,7 +73,7 @@ void run(jute::view line) {
 
   long height = 1;
   long oh = height;
-  bool duh = true;
+  int duh = 5;
 
   long oi{};
   int magic_row{};
@@ -83,7 +83,7 @@ void run(jute::view line) {
     auto lp = j.pos();
 
     auto shf = 3;
-    int y;
+    long y;
     for (y = height + 3; y > 0; y--) {
       shf = shoosh(y, shf, pat);
 
@@ -107,26 +107,32 @@ void run(jute::view line) {
       silog::log(silog::debug, "magic: %x", magic_row);
     }
 
-    if (duh && pit[height - 1] == magic_row && cur_pat == 0 &&
+    // if (duh > 0 && pit[height - 1] == magic_row && cur_pat == 0) {
+    //   silog::log(silog::debug, "%ld - lp %d", height - 1, lp);
+    // }
+    if (pit[height - 1] == magic_row && cur_pat == 0 && lp == magic_jetn) {
+      silog::log(silog::debug, "%ld - lp %d - i %ld", height - 1, lp, i);
+    }
+    if (duh > 0 && pit[height - 1] == magic_row && cur_pat == 0 &&
         lp == magic_jetn) {
-      auto dh = height - 1 - oh;
-      auto di = i - oi;
-      silog::log(silog::debug, "%ld %ld - lp %d - i %ld %ld", height - 1, dh,
-                 lp, i, di);
+      long dh = height - 1 - oh;
+      long di = i - oi;
+      // silog::log(silog::debug, "%ld %ld - lp %d - i %ld %ld", height - 1, dh,
+      // lp, i, di);
 
-      if (oi == 0) {
+      if (--duh > 0) {
         oi = i;
         oh = height - 1;
       } else {
-        auto rem = limit - i;
-        auto cycles = rem / di;
+        long rem = limit - i;
+        long cycles = rem / di - 5;
 
         pit.reset();
         i += di * cycles;
         height += dh * cycles - 1;
         pit[height] = 0x1ff;
-        silog::log(silog::debug, "skip - h: %ld - i: %ld - lp: %d", height - 1,
-                   i, lp);
+        silog::log(silog::debug, "skip - h: %ld - i: %ld - lp: %d", height, i,
+                   lp);
         duh = false;
       }
     }
