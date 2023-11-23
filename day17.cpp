@@ -24,6 +24,9 @@ public:
     silog::log(silog::debug, "loaded %zu jet pats", v.size());
   }
 
+  constexpr auto pos() const { return p; }
+  constexpr auto size() const { return data.size(); }
+
   int next() {
     auto op = p;
     p = (p + 1) % data.size();
@@ -37,11 +40,11 @@ class pit_t {
   hai::array<int> pit{10240};
 
 public:
-  pit_t() {
+  pit_t() { reset(); }
+  void reset() {
     for (auto &p : pit) {
       p = pit_mask;
     }
-    pit[0] = 0x1ff;
   }
   constexpr auto &operator[](long i) { return pit[i % 1024]; }
 } pit;
@@ -62,15 +65,22 @@ int shoosh(int y, int shf, const pat_t &pat) {
 }
 
 long limit = 2022;
+int magic_jetn = 0;
 void run(jute::view line) {
   j = jets{line};
   pit = {};
+  pit[0] = 0x1ff;
 
   long height = 1;
+  long oh = height;
+  bool duh = true;
 
+  long oi{};
+  int magic_row{};
   int cur_pat = 0;
   for (long i = 0; i < limit; i++) {
     const auto &pat = pats[cur_pat];
+    auto lp = j.pos();
 
     auto shf = 3;
     int y;
@@ -92,15 +102,50 @@ void run(jute::view line) {
     pit[height + 5] = pit_mask;
     pit[height + 6] = pit_mask;
 
+    if (magic_row == 0) {
+      magic_row = pit[1];
+      silog::log(silog::debug, "magic: %x", magic_row);
+    }
+
+    if (duh && pit[height - 1] == magic_row && cur_pat == 0 &&
+        lp == magic_jetn) {
+      auto dh = height - 1 - oh;
+      auto di = i - oi;
+      silog::log(silog::debug, "%ld %ld - lp %d - i %ld %ld", height - 1, dh,
+                 lp, i, di);
+
+      if (oi == 0) {
+        oi = i;
+        oh = height - 1;
+      } else {
+        auto rem = limit - i;
+        auto cycles = rem / di;
+
+        pit.reset();
+        i += di * cycles;
+        height += dh * cycles - 1;
+        pit[height] = 0x1ff;
+        silog::log(silog::debug, "skip - h: %ld - i: %ld - lp: %d", height - 1,
+                   i, lp);
+        duh = false;
+      }
+    }
+
     cur_pat = (cur_pat + 1) % pat_count;
   }
   silog::log(silog::info, "============== height: %ld", height - 1);
 }
 int main() {
+  // found by testing where pattern repeats. could be done automatically, but
+  // do we care?
+  magic_jetn = 2;
   loop_e(run);
+  magic_jetn = 84;
   loop(run);
 
   limit = 1000000000000;
+  magic_jetn = 2;
   loop_e(run);
+  magic_jetn = 84;
   loop(run);
 }
