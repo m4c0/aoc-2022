@@ -39,13 +39,62 @@ struct simul {
   unsigned bs{};
   unsigned gs{};
 };
-simul bump(simul s) {
+constexpr simul bump(simul s) {
   s.depth++;
   s.os += s.o_bots;
   s.cs += s.c_bots;
   s.bs += s.b_bots;
   s.gs += s.g_bots;
   return s;
+}
+
+constexpr auto bump_g(const bprint &bp, simul s) {
+  auto ss = bump(s);
+  ss.g_bots++;
+  ss.os -= bp.gro;
+  ss.bs -= bp.grob;
+  return ss;
+}
+constexpr auto bump_b(const bprint &bp, simul s) {
+  auto ss = bump(s);
+  ss.b_bots++;
+  ss.os -= bp.obro;
+  ss.cs -= bp.obrc;
+  return ss;
+}
+constexpr auto bump_c(const bprint &bp, simul s) {
+  auto ss = bump(s);
+  ss.c_bots++;
+  ss.os -= bp.cro;
+  return ss;
+}
+constexpr auto bump_o(const bprint &bp, simul s) {
+  auto ss = bump(s);
+  ss.o_bots++;
+  ss.os -= bp.oro;
+  return ss;
+}
+
+constexpr int ceil(int a, int b) { return (a + b - 1) / b; }
+constexpr int turns(int req, int stock, int bots) {
+  if (bots == 0)
+    return 9999999;
+  if (stock >= req)
+    return 0;
+  return ceil(req - stock, bots);
+}
+
+constexpr auto gbot_turns(const bprint &bp, const simul &s) {
+  return turns(bp.grob, s.bs, s.b_bots) + turns(bp.gro, s.os, s.o_bots);
+}
+constexpr auto bbot_turns(const bprint &bp, const simul &s) {
+  return turns(bp.obrc, s.cs, s.c_bots) + turns(bp.obro, s.os, s.o_bots);
+}
+constexpr auto cbot_turns(const bprint &bp, const simul &s) {
+  return turns(bp.cro, s.os, s.o_bots);
+}
+constexpr auto obot_turns(const bprint &bp, const simul &s) {
+  return turns(bp.oro, s.os, s.o_bots);
 }
 
 int step(const bprint &bp, const simul &s, int mins) {
