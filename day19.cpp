@@ -28,74 +28,19 @@ struct bprint {
   unsigned gro;
   unsigned grob;
 };
-struct simul {
-  unsigned depth{};
-  unsigned o_bots{1};
-  unsigned c_bots{};
-  unsigned b_bots{};
-  unsigned g_bots{};
-  unsigned os{};
-  unsigned cs{};
-  unsigned bs{};
-  unsigned gs{};
+
+constexpr const auto bot_count = 4;
+constexpr const auto max_mins = 24;
+struct eq {
+  int bot_n_m[bot_count][max_mins]{};
+  int rhs{};
 };
-constexpr simul bump(simul s) {
-  s.depth++;
-  s.os += s.o_bots;
-  s.cs += s.c_bots;
-  s.bs += s.b_bots;
-  s.gs += s.g_bots;
-  return s;
-}
 
-constexpr auto bump_g(const bprint &bp, simul s) {
-  auto ss = bump(s);
-  ss.g_bots++;
-  ss.os -= bp.gro;
-  ss.bs -= bp.grob;
-  return ss;
-}
-constexpr auto bump_b(const bprint &bp, simul s) {
-  auto ss = bump(s);
-  ss.b_bots++;
-  ss.os -= bp.obro;
-  ss.cs -= bp.obrc;
-  return ss;
-}
-constexpr auto bump_c(const bprint &bp, simul s) {
-  auto ss = bump(s);
-  ss.c_bots++;
-  ss.os -= bp.cro;
-  return ss;
-}
-constexpr auto bump_o(const bprint &bp, simul s) {
-  auto ss = bump(s);
-  ss.o_bots++;
-  ss.os -= bp.oro;
-  return ss;
-}
-
-constexpr int ceil(int a, int b) { return (a + b - 1) / b; }
-constexpr int turns(int req, int stock, int bots) {
-  if (bots == 0)
-    return 9999999;
-  if (stock >= req)
-    return 0;
-  return ceil(req - stock, bots);
-}
-
-constexpr auto gbot_turns(const bprint &bp, const simul &s) {
-  return turns(bp.grob, s.bs, s.b_bots) + turns(bp.gro, s.os, s.o_bots);
-}
-constexpr auto bbot_turns(const bprint &bp, const simul &s) {
-  return turns(bp.obrc, s.cs, s.c_bots) + turns(bp.obro, s.os, s.o_bots);
-}
-constexpr auto cbot_turns(const bprint &bp, const simul &s) {
-  return turns(bp.cro, s.os, s.o_bots);
-}
-constexpr auto obot_turns(const bprint &bp, const simul &s) {
-  return turns(bp.oro, s.os, s.o_bots);
-}
+// costs eqs + max eq (missing other constraints)
+constexpr const auto eq_count = 1 + 1 + 2 + 2 + 1;
+struct mat {
+  eq eqs[X]{};
+};
 
 int step(const bprint &bp, const simul &s, int mins) {
   if (mins == 0) {
@@ -105,44 +50,43 @@ int step(const bprint &bp, const simul &s, int mins) {
   // s.g_bots, s.depth);
   mins--;
 
-  // wait?
   int max{};
 
-  // build geode?
-  if (s.os >= bp.gro && s.cs >= bp.grob) {
-    simul ss = bump(s);
-    ss.g_bots++;
-    ss.os -= bp.gro;
-    ss.bs -= bp.grob;
-    mx(max, step(bp, ss, mins));
-  }
-
-  // build obsidian?
-  if (s.os >= bp.obro && s.cs >= bp.obrc) {
-    simul ss = bump(s);
-    ss.b_bots++;
-    ss.os -= bp.obro;
-    ss.cs -= bp.obrc;
-    mx(max, step(bp, ss, mins));
-  }
-
-  // build clay?
-  if (s.os >= bp.cro) {
-    simul ss = bump(s);
-    ss.c_bots++;
-    ss.os -= bp.cro;
-    mx(max, step(bp, ss, mins));
-  }
-
-  // build ore?
-  if (s.os >= bp.oro) {
-    simul ss = bump(s);
-    ss.o_bots++;
-    ss.os -= bp.oro;
-    mx(max, step(bp, ss, mins));
-  }
-
-  mx(max, step(bp, bump(s), mins));
+  // maximise:
+  // g = sum c=0->23 (bot_g_c * (24 - c))
+  //
+  // given:
+  // bot_n_m >= 0
+  // bot_or_0 = 1
+  // a = b + 1
+  // bot_g_a <= (
+  //     sum c=0->(a-2)(bot_or_c)
+  //   - ((bot_or_b - 1) * 4 + bot_cl_b * 2 + bot_ob_b * 3)
+  //   ) / 2
+  // bot_g_a <= (sum c=0->(a-2)(bot_ob_c)) / 7
+  // bot_b_a <= (
+  //     sum c=0->(a-2)(bot_or_c)
+  //   - ((bot_or_b - 1) * 4 + bot_cl_b * 2)
+  //   ) / 3
+  // ...
+  // sum bot_n_a = sum bot_n_b + 1
+  // bot_n_a >= bot_n_b
+  //
+  // cost_or_g * bot_g_a <=
+  //   sum c bot_or_c - sum n (bot_n_b * cost_or_n) - cost_or_or
+  // cost_ob_g * bot_g_a <=
+  //   sum c bot_ob_c - sum n (bot_n_b * cost_ob_n)
+  // ...
+  //
+  // cost_or_g * bot_g_a
+  //   - sum c bot_or_c - sum n (bot_n_b * cost_or_n)
+  //   + slack_or_g_a
+  //   = cost_or_or
+  // cost_ob_g * bot_g_a
+  //   - sum c bot_ob_c - sum n (bot_n_b * cost_ob_n)
+  //   + slack_ob_g_a
+  //   = 0
+  //
 
   return max;
 }
@@ -163,15 +107,4 @@ int main() {
     };
     info("g", step(b, {}, 24));
   });
-
-  // o (w) o1
-  // o o1 (w) o2
-  // o o2 (c,w) +c o1
-  // o+c o1 (w) o2 c1
-  // o+c o2 c1 (c,w) +c o1 c2
-  // o+2c o1 c2 (w) o2 c4
-  // o+2c o2 c4 (c,w) +c o1 c6
-  // o+3c o1 c6 (w) o2 c9
-  // o+3c o2 c9 (c,w) o3 c12
-  // o+3c o3 c12 (c,w) o4 c15
 }
